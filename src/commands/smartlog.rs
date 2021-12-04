@@ -569,9 +569,9 @@ pub fn smartlog(
                 &event_replayer,
                 event_replayer.make_default_cursor(),
             )?,
-            &mut BranchesDescriptor::new(&repo, &references_snapshot)?,
-            &mut DifferentialRevisionDescriptor::new(&repo)?,
-            &mut CommitMessageDescriptor::new()?,
+            &mut BranchesDescriptor::new(&repo, &references_snapshot, None)?,
+            &mut DifferentialRevisionDescriptor::new(&repo, None)?,
+            &mut CommitMessageDescriptor::new(None)?,
         ],
     )?;
     for line in lines {

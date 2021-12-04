@@ -3,15 +3,17 @@
 //! These are rendered inline in the smartlog, between the commit hash and the
 //! commit message.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
-use std::ffi::OsStr;
+use std::ffi::{OsStr, OsString};
 use std::ops::Add;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime};
 
 use cursive::theme::BaseColor;
 use cursive::utils::markup::StyledString;
 use lazy_static::lazy_static;
+use os_str_bytes::OsStrBytes;
 use regex::Regex;
 use tracing::instrument;
 
@@ -48,6 +50,55 @@ impl<'repo> NodeObject<'repo> {
             NodeObject::Commit { commit } => commit.get_oid(),
             NodeObject::GarbageCollected { oid } => *oid,
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct Redactor {
+    preserved_ref_names: HashSet<OsString>,
+    ref_names: Arc<Mutex<HashMap<OsString, OsString>>>,
+}
+
+impl Redactor {
+    pub fn new(preserved_ref_names: HashSet<OsString>) -> Self {
+        Self {
+            preserved_ref_names,
+            ref_names: Default::default(),
+        }
+    }
+
+    pub fn redact_ref_name(&self, ref_name: &OsStr) -> OsString {
+        if self.preserved_ref_names.contains(ref_name) || !ref_name.to_raw_bytes().contains(&b'/') {
+            return ref_name.to_owned();
+        }
+
+        let mut ref_names = self.ref_names.lock().expect("Poisoned mutex");
+        let len = ref_names.len();
+        ref_names
+            .entry(ref_name.to_owned())
+            .or_insert_with_key(|ref_name| {
+                let categorized_ref_name = CategorizedReferenceName::new(&ref_name);
+                let prefix = match categorized_ref_name {
+                    CategorizedReferenceName::LocalBranch { name: _, prefix } => prefix,
+                    CategorizedReferenceName::RemoteBranch { name: _, prefix } => prefix,
+                    CategorizedReferenceName::OtherRef { name: _ } => "",
+                };
+                format!("{}redacted-ref-{}", prefix, len).into()
+            })
+            .clone()
+    }
+
+    pub fn redact_commit_summary(&self, summary: &str) -> String {
+        summary
+            .chars()
+            .map(|char| {
+                if char.is_ascii_whitespace() {
+                    char
+                } else {
+                    'x'
+                }
+            })
+            .collect()
     }
 }
 
@@ -105,23 +156,29 @@ impl NodeDescriptor for CommitOidDescriptor {
 
 /// Display the first line of the commit message.
 #[derive(Debug)]
-pub struct CommitMessageDescriptor;
+pub struct CommitMessageDescriptor<'a> {
+    redactor: Option<&'a Redactor>,
+}
 
-impl CommitMessageDescriptor {
+impl<'a> CommitMessageDescriptor<'a> {
     /// Constructor.
-    pub fn new() -> eyre::Result<Self> {
-        Ok(CommitMessageDescriptor)
+    pub fn new(redactor: Option<&'a Redactor>) -> eyre::Result<Self> {
+        Ok(CommitMessageDescriptor { redactor })
     }
 }
 
-impl NodeDescriptor for CommitMessageDescriptor {
+impl<'a> NodeDescriptor for CommitMessageDescriptor<'a> {
     #[instrument]
     fn describe_node(&mut self, object: &NodeObject) -> eyre::Result<Option<StyledString>> {
-        let message = match object {
+        let summary = match object {
             NodeObject::Commit { commit } => commit.get_summary()?.to_string_lossy().into_owned(),
             NodeObject::GarbageCollected { oid: _ } => "<garbage collected>".to_string(),
         };
-        Ok(Some(StyledString::plain(message)))
+        let summary = match self.redactor {
+            None => summary,
+            Some(redactor) => redactor.redact_commit_summary(&summary),
+        };
+        Ok(Some(StyledString::plain(summary)))
     }
 }
 
@@ -182,15 +239,21 @@ impl<'a> NodeDescriptor for ObsolescenceExplanationDescriptor<'a> {
 pub struct BranchesDescriptor<'a> {
     is_enabled: bool,
     references_snapshot: &'a RepoReferencesSnapshot,
+    redactor: Option<&'a Redactor>,
 }
 
 impl<'a> BranchesDescriptor<'a> {
     /// Constructor.
-    pub fn new(repo: &Repo, references_snapshot: &'a RepoReferencesSnapshot) -> eyre::Result<Self> {
+    pub fn new(
+        repo: &Repo,
+        references_snapshot: &'a RepoReferencesSnapshot,
+        redactor: Option<&'a Redactor>,
+    ) -> eyre::Result<Self> {
         let is_enabled = get_commit_descriptors_branches(repo)?;
         Ok(BranchesDescriptor {
             is_enabled,
             references_snapshot,
+            redactor,
         })
     }
 }
@@ -202,14 +265,17 @@ impl<'a> NodeDescriptor for BranchesDescriptor<'a> {
             return Ok(None);
         }
 
-        let branch_names: HashSet<&OsStr> = match self
+        let branch_names: HashSet<OsString> = match self
             .references_snapshot
             .branch_oid_to_names
             .get(&object.get_oid())
         {
             Some(branch_names) => branch_names
                 .iter()
-                .map(|branch_name| branch_name.as_os_str())
+                .map(|branch_name| match self.redactor {
+                    Some(redactor) => redactor.redact_ref_name(&branch_name),
+                    None => branch_name.clone(),
+                })
                 .collect(),
             None => HashSet::new(),
         };
@@ -220,7 +286,7 @@ impl<'a> NodeDescriptor for BranchesDescriptor<'a> {
             let mut branch_names: Vec<String> = branch_names
                 .into_iter()
                 .map(
-                    |branch_name| match CategorizedReferenceName::new(branch_name) {
+                    |branch_name| match CategorizedReferenceName::new(&branch_name) {
                         reference_name @ CategorizedReferenceName::LocalBranch { .. } => {
                             reference_name.render_suffix()
                         }
@@ -245,15 +311,19 @@ impl<'a> NodeDescriptor for BranchesDescriptor<'a> {
 
 /// Display the associated Phabricator revision for a given commit.
 #[derive(Debug)]
-pub struct DifferentialRevisionDescriptor {
+pub struct DifferentialRevisionDescriptor<'a> {
     is_enabled: bool,
+    redactor: Option<&'a Redactor>,
 }
 
-impl DifferentialRevisionDescriptor {
+impl<'a> DifferentialRevisionDescriptor<'a> {
     /// Constructor.
-    pub fn new(repo: &Repo) -> eyre::Result<Self> {
+    pub fn new(repo: &Repo, redactor: Option<&'a Redactor>) -> eyre::Result<Self> {
         let is_enabled = get_commit_descriptors_differential_revision(repo)?;
-        Ok(DifferentialRevisionDescriptor { is_enabled })
+        Ok(DifferentialRevisionDescriptor {
+            is_enabled,
+            redactor,
+        })
     }
 }
 
@@ -274,9 +344,12 @@ $",
     Some(diff_number.to_owned())
 }
 
-impl NodeDescriptor for DifferentialRevisionDescriptor {
+impl<'a> NodeDescriptor for DifferentialRevisionDescriptor<'a> {
     #[instrument]
     fn describe_node(&mut self, object: &NodeObject) -> eyre::Result<Option<StyledString>> {
+        if self.redactor.is_some() {
+            return Ok(None);
+        }
         if !self.is_enabled {
             return Ok(None);
         }

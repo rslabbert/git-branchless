@@ -372,9 +372,9 @@ pub fn traverse_commits(
         &mut [
             &mut CommitOidDescriptor::new(true)?,
             &mut RelativeTimeDescriptor::new(&repo, SystemTime::now())?,
-            &mut BranchesDescriptor::new(&repo, &references_snapshot)?,
-            &mut DifferentialRevisionDescriptor::new(&repo)?,
-            &mut CommitMessageDescriptor::new()?,
+            &mut BranchesDescriptor::new(&repo, &references_snapshot, None)?,
+            &mut DifferentialRevisionDescriptor::new(&repo, None)?,
+            &mut CommitMessageDescriptor::new(None)?,
         ],
         head_oid,
         command,
@@ -545,9 +545,9 @@ pub fn checkout(
                 &mut [
                     &mut CommitOidDescriptor::new(true)?,
                     &mut RelativeTimeDescriptor::new(&repo, SystemTime::now())?,
-                    &mut BranchesDescriptor::new(&repo, &references_snapshot)?,
-                    &mut DifferentialRevisionDescriptor::new(&repo)?,
-                    &mut CommitMessageDescriptor::new()?,
+                    &mut BranchesDescriptor::new(&repo, &references_snapshot, None)?,
+                    &mut DifferentialRevisionDescriptor::new(&repo, None)?,
+                    &mut CommitMessageDescriptor::new(None)?,
                 ],
             )? {
                 Some(oid) => Some(oid.to_string()),

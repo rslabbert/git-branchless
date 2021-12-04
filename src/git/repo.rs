@@ -1440,7 +1440,7 @@ impl<'repo> Commit<'repo> {
             },
             &mut [
                 &mut CommitOidDescriptor::new(true)?,
-                &mut CommitMessageDescriptor::new()?,
+                &mut CommitMessageDescriptor::new(None)?,
             ],
         )?;
         Ok(description)

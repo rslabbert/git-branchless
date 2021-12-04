@@ -51,9 +51,9 @@ fn render_cursor_smartlog(
             &mut CommitOidDescriptor::new(true)?,
             &mut RelativeTimeDescriptor::new(repo, SystemTime::now())?,
             &mut ObsolescenceExplanationDescriptor::new(event_replayer, event_cursor)?,
-            &mut BranchesDescriptor::new(repo, &references_snapshot)?,
-            &mut DifferentialRevisionDescriptor::new(repo)?,
-            &mut CommitMessageDescriptor::new()?,
+            &mut BranchesDescriptor::new(repo, &references_snapshot, None)?,
+            &mut DifferentialRevisionDescriptor::new(repo, None)?,
+            &mut CommitMessageDescriptor::new(None)?,
         ],
     )?;
     Ok(result)
