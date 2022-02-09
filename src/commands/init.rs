@@ -70,6 +70,7 @@ const ALL_ALIASES: &[(&str, &str)] = &[
     ("restack", "restack"),
     ("sl", "smartlog"),
     ("smartlog", "smartlog"),
+    ("sync", "sync"),
     ("undo", "undo"),
     ("unhide", "unhide"),
 ];
