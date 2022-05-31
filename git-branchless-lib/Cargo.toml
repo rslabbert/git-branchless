@@ -48,11 +48,11 @@ eden_dag = { package = "esl01-dag", version = "0.2.1" }
 eyre = "0.6.8"
 git2 = { version = "0.14.2", default-features = false }
 git-record = { version = "0.1", path = "../git-record" }
-indicatif = "0.17.0-rc.10"
+indicatif = "0.17.0-rc.11"
 itertools = "0.10.3"
 lazy_static = "1.4.0"
-os_str_bytes = "6.0.0"
-rayon = "1.5.2"
+os_str_bytes = "6.1.0"
+rayon = "1.5.3"
 regex = "1.5.5"
 rusqlite = { version = "0.27.0", features = ["bundled"] }
 tempfile = "3.3.0"
