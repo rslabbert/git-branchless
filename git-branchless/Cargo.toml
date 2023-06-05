@@ -42,7 +42,7 @@ man = "0.3.0"
 once_cell = "1.14.0"
 path-slash = "0.2.1"
 rayon = "1.5.3"
-regex = "1.6.0"
+regex = "1.8.4"
 rusqlite = { version = "0.28.0", features = ["bundled"] }
 thiserror = "1.0.34"
 tracing = "0.1.35"
