@@ -19,7 +19,7 @@ version = "0.4.0"
 [dependencies]
 bstr = "1.0.0"
 bugreport = "0.5.0"
-chrono = "0.4.19"
+chrono = "0.4.26"
 chrono-english = "0.1.7"
 chronoutil = "0.2.3"
 clap = { version = "3.2.20", features = ["derive"] }
