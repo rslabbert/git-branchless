@@ -74,5 +74,5 @@ bstr = "1.0.0"
 criterion = { version = "0.3.6", features = ["html_reports"] }
 insta = "1.19.1"
 lazy_static = "1.4.0"
-portable-pty = "0.7.0"
+portable-pty = "0.8.1"
 vt100 = "0.15.1"
