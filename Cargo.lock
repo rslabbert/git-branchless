@@ -175,19 +175,18 @@ checksum = "ba3569f383e8f1598449f1a423e72e99569137b47740b1da11ef19af3d5c3223"
 dependencies = [
  "lazy_static",
  "memchr",
- "regex-automata",
+ "regex-automata 0.1.10",
  "serde",
 ]
 
 [[package]]
 name = "bstr"
-version = "1.0.0"
+version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11aee792a41973cf54c837d6f344e35a03076328831b01ef30a14d965d47bfbc"
+checksum = "6798148dccfbff0fae41c7574d2fa8f1ef3492fba0face179de5d8d447d67b05"
 dependencies = [
  "memchr",
- "once_cell",
- "regex-automata",
+ "regex-automata 0.3.2",
  "serde",
 ]
 
@@ -1073,7 +1072,7 @@ version = "0.4.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
- "bstr 1.0.0",
+ "bstr 1.6.0",
  "bugreport",
  "chrono",
  "chrono-english",
@@ -1116,7 +1115,7 @@ version = "0.4.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
- "bstr 1.0.0",
+ "bstr 1.6.0",
  "chashmap",
  "chrono",
  "color-eyre",
@@ -1521,7 +1520,7 @@ version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8263075bb86c5a1b1427b5ae862e8889656f126e9f77c484496e8b47cf5c5558"
 dependencies = [
- "regex-automata",
+ "regex-automata 0.1.10",
 ]
 
 [[package]]
@@ -2173,6 +2172,12 @@ checksum = "6c230d73fb8d8c1b9c0b3135c5142a8acee3a0558fb8db5cf1cb65f8d7862132"
 dependencies = [
  "regex-syntax",
 ]
+
+[[package]]
+name = "regex-automata"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "83d3daa6976cffb758ec878f108ba0e062a45b2d6ca3a2cca965338855476caf"
 
 [[package]]
 name = "regex-syntax"
